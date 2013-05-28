@@ -5,10 +5,9 @@ import argparse
 
 logging.basicConfig()
 
-# sys.path.append(os.path.join(os.path.abspath(os.path.dirname(__file__)), "..", ".."))
-print sys.path
+sys.path.append(os.path.join(os.path.abspath(os.path.dirname(__file__)), "..", ".."))
 
-import tasks
+from utils.distributed import tasks
 
 
 def main():
@@ -58,7 +57,10 @@ def main():
         with open(file_path, 'rb') as f:
             data = f.read()
 
-        task_id = tasks.submit_sample.delay(file_path, data)
+
+        r = tasks.submit_sample.delay(file_path, data)
+        # This is blocking!
+        task_id = r.get()
 
         if task_id:
             print("Success" + ": File \"{0}\" added as task with ID {1}".format(file_path, task_id))
