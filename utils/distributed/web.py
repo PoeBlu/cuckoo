@@ -40,22 +40,22 @@ def custom_headers():
     response.headers["Expires"] = "0"
 
 
-@route("/")
+@route("/distributed/")
 def index():
     context = {}
-    template = env.get_template("submit.html")
+    template = env.get_template("distributed/submit.html")
     return template.render({"context": context})
 
 
-@route("/browse")
+@route("/distributed/browse")
 def browse():
     """
     """
     r = tasks.get_task_list.delay()
     # Blocking!
     task_list = r.get()
-    template = env.get_template("browse.html")
-    return template.render({"rows": task_list, "os": os})
+    template = env.get_template("distributed/browse.html")
+    return template.render({"rows": task_list})
 
 
 @route("/static/<filename:path>")
@@ -63,7 +63,7 @@ def server_static(filename):
     return static_file(filename, root=os.path.join(CUCKOO_ROOT, "data", "html"))
 
 
-@route("/submit", method="POST")
+@route("/distributed/submit", method="POST")
 def submit():
     context = {}
     errors = False
@@ -87,7 +87,7 @@ def submit():
         errors = True
 
     if errors:
-        template = env.get_template("submit.html")
+        template = env.get_template("distributed/submit.html")
         return template.render({"timeout": timeout,
                                 "priority": priority,
                                 "options": options,
@@ -98,12 +98,13 @@ def submit():
     # This is blocking!
     task_id = r.get()
 
-    template = env.get_template("success.html")
-    return template.render({"taskid": task_id,
+    template = env.get_template("distributed/success.html")
+    return template.render({"queue_id": task_id[0],
+                            "task_id": task_id[1],
                             "submitfile": data.filename.decode("utf-8")})
 
 
-@route("/view/<queue_id>/<task_id>")
+@route("/distributed/view/<queue_id>/<task_id>")
 def view(queue_id, task_id):
     if not task_id.isdigit():
         return HTTPError(code=404, output="The specified ID is invalid")

@@ -57,6 +57,7 @@ def get_task_list():
     tasks = []
     for row in rows:
         task = {
+            "queue_id": get_task_list.request.hostname,
             "id" : row.id,
             "target" : row.target,
             "category" : row.category,
