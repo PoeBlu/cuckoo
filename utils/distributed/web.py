@@ -20,7 +20,6 @@ logging.basicConfig()
 sys.path.append(os.path.join(os.path.abspath(os.path.dirname(__file__)), "..", ".."))
 
 from lib.cuckoo.common.constants import CUCKOO_ROOT
-from lib.cuckoo.common.utils import store_temp_file
 
 # Templating engine.
 env = Environment()
@@ -45,12 +44,18 @@ def custom_headers():
 def index():
     context = {}
     template = env.get_template("submit.html")
-    return template.render({"context" : context})
+    return template.render({"context": context})
 
 
 @route("/browse")
 def browse():
-    pass
+    """
+    """
+    r = tasks.get_task_list.delay()
+    # Blocking!
+    task_list = r.get()
+    template = env.get_template("browse.html")
+    return template.render({"rows": task_list, "os": os})
 
 
 @route("/static/<filename:path>")
@@ -63,10 +68,10 @@ def submit():
     context = {}
     errors = False
 
-    package  = request.forms.get("package", "")
-    options  = request.forms.get("options", "")
+    package = request.forms.get("package", "")
+    options = request.forms.get("options", "")
     priority = request.forms.get("priority", 1)
-    timeout  = request.forms.get("timeout", "")
+    timeout = request.forms.get("timeout", "")
     data = request.files.file
 
     try:
@@ -76,32 +81,35 @@ def submit():
         context["error_priority"] = "Needs to be a number"
         errors = True
 
-    if data == None or data == "":
+    if not data:
         context["error_toggle"] = True
         context["error_file"] = "Mandatory"
         errors = True
 
     if errors:
         template = env.get_template("submit.html")
-        return template.render({"timeout" : timeout,
-                                "priority" : priority,
-                                "options" : options,
-                                "package" : package,
-                                "context" : context})
-
+        return template.render({"timeout": timeout,
+                                "priority": priority,
+                                "options": options,
+                                "package": package,
+                                "context": context})
 
     r = tasks.submit_sample.delay(data.filename, data.file.read())
     # This is blocking!
     task_id = r.get()
 
     template = env.get_template("success.html")
-    return template.render({"taskid" : task_id,
-                            "submitfile" : data.filename.decode("utf-8")})
+    return template.render({"taskid": task_id,
+                            "submitfile": data.filename.decode("utf-8")})
 
 
-@route("/view/<task_id>")
-def view(task_id):
-    pass
+@route("/view/<queue_id>/<task_id>")
+def view(queue_id, task_id):
+    if not task_id.isdigit():
+        return HTTPError(code=404, output="The specified ID is invalid")
+
+    r = tasks.get_html_report.apply_async(args=[task_id], queue=queue_id)
+    return r.get()
 
 
 if __name__ == "__main__":

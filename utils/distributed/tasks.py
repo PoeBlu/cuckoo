@@ -6,7 +6,6 @@ Setup a Celery application
 Individual tasks for use in Celery.
 """
 import os
-import random
 from celery import Celery
 
 from lib.cuckoo.common.config import Config
@@ -47,3 +46,46 @@ def submit_url(url):
     Submit a URL to a distributed Cuckoo worker.
     """
     print "Received a URL: %s" % url
+
+
+@celery.task
+def get_task_list():
+    """
+    Fetch all tasks and their states.
+    """
+    rows = db.list_tasks()
+    tasks = []
+    for row in rows:
+        task = {
+            "id" : row.id,
+            "target" : row.target,
+            "category" : row.category,
+            "status" : row.status,
+            "added_on" : row.added_on,
+            "processed" : False
+        }
+
+        if os.path.exists(os.path.join(CUCKOO_ROOT, "storage", "analyses", str(task["id"]), "reports", "report.html")):
+            task["processed"] = True
+
+        if row.category == "file":
+            sample = db.view_sample(row.sample_id)
+            task["md5"] = sample.md5
+
+        tasks.append(task)
+
+    return tasks
+
+
+@celery.task
+def get_html_report(task_id):
+    """
+    """
+    report_path = os.path.join(CUCKOO_ROOT, "storage", "analyses", task_id, "reports", "report.html")
+    print report_path
+
+    try:
+        with open(report_path, "rb") as f:
+            return f.read()
+    except:
+        raise
