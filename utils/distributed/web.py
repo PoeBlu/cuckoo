@@ -20,6 +20,10 @@ logging.basicConfig()
 sys.path.append(os.path.join(os.path.abspath(os.path.dirname(__file__)), "..", ".."))
 
 from lib.cuckoo.common.constants import CUCKOO_ROOT
+from lib.cuckoo.common.config import Config
+
+# Local Cuckoo config and database
+config = Config(os.path.join(CUCKOO_ROOT, "conf", "cuckoo.conf"))
 
 # Templating engine.
 env = Environment()
@@ -51,9 +55,13 @@ def index():
 def browse():
     """
     """
-    r = tasks.get_task_list.delay()
-    # Blocking!
-    task_list = r.get()
+    workers = [x.strip() for x in config.celery.workers.split()]
+    task_list = []
+    for worker in workers:
+        r = tasks.get_task_list.apply_async(queue=worker)
+        # Blocking!
+        task_list += (r.get())
+
     template = env.get_template("distributed/browse.html")
     return template.render({"rows": task_list})
 
