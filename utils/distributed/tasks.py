@@ -49,21 +49,21 @@ def submit_url(url):
 
 
 @celery.task
-def get_task_list():
+def list_tasks(limit=None, details=False):
     """
     Fetch all tasks and their states.
     """
-    rows = db.list_tasks()
+    rows = db.list_tasks(limit=limit, details=details)
     tasks = []
     for row in rows:
         task = {
-            "queue_id": get_task_list.request.hostname,
-            "id" : row.id,
-            "target" : row.target,
-            "category" : row.category,
-            "status" : row.status,
-            "added_on" : row.added_on,
-            "processed" : False
+            "queue_id": list_tasks.request.hostname,
+            "id": row.id,
+            "target": row.target,
+            "category": row.category,
+            "status": row.status,
+            "added_on": row.added_on,
+            "processed": False
         }
 
         if os.path.exists(os.path.join(CUCKOO_ROOT, "storage", "analyses", str(task["id"]), "reports", "report.html")):
@@ -79,11 +79,33 @@ def get_task_list():
 
 
 @celery.task
-def get_html_report(task_id):
+def view_task(task_id, details=False):
+    """
+    Fetch details for a single task.
+    """
+    task = db.view_task(task_id, details=details)
+    return task
+
+
+@celery.task
+def get_report(task_id, report_format="json"):
     """
     """
-    report_path = os.path.join(CUCKOO_ROOT, "storage", "analyses", task_id, "reports", "report.html")
-    print report_path
+    formats = {
+        "json": "report.json",
+        "html": "report.html",
+        "maec": "report.maec-1.1.xml",
+        "metadata": "report.metadata.xml",
+        "pickle": "report.pickle"
+    }
+
+    if report_format.lower() in formats:
+        report_path = os.path.join(CUCKOO_ROOT,
+                                   "storage",
+                                   "analyses",
+                                   task_id,
+                                   "reports",
+                                   formats[report_format.lower()])
 
     try:
         with open(report_path, "rb") as f:

@@ -58,9 +58,9 @@ def browse():
     workers = [x.strip() for x in config.celery.workers.split()]
     task_list = []
     for worker in workers:
-        r = tasks.get_task_list.apply_async(queue=worker)
+        r = tasks.list_tasks.apply_async(queue=worker)
         # Blocking!
-        task_list += (r.get())
+        task_list += r.get()
 
     template = env.get_template("distributed/browse.html")
     return template.render({"rows": task_list})
@@ -117,7 +117,11 @@ def view(queue_id, task_id):
     if not task_id.isdigit():
         return HTTPError(code=404, output="The specified ID is invalid")
 
-    r = tasks.get_html_report.apply_async(args=[task_id], queue=queue_id)
+    print "Fetching report..."
+    r = tasks.get_report.apply_async(args=[task_id],
+                                     kwargs={"report_format": "html"},
+                                     queue=queue_id)
+
     return r.get()
 
 
