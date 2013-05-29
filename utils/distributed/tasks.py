@@ -62,7 +62,7 @@ def list_tasks(limit=None, details=False):
             "target": row.target,
             "category": row.category,
             "status": row.status,
-            "added_on": row.added_on,
+            "added_on": str(row.added_on),
             "processed": False
         }
 
