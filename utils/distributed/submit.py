@@ -57,7 +57,6 @@ def main():
         with open(file_path, 'rb') as f:
             data = f.read()
 
-
         r = tasks.submit_sample.delay(file_path, data)
         # This is blocking!
         task_id = r.get()
