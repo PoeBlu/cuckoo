@@ -125,7 +125,7 @@ def main():
             print(bold(red("Error")) + u": the specified file/folder does not exist at path \"{0}\"".format(path))
             return False
 
-        # Get absolute path of tool 
+        # Get absolute path of tool
         if args.tool:
             tool = to_unicode(args.tool)
             tool_path = to_unicode(os.path.abspath(tool))
@@ -225,8 +225,8 @@ def main():
                                       enforce_timeout=args.enforce_timeout,
                                       clock=args.clock,
                                       tags=args.tags,
-                                       tool=args.tool,
-                                       tool_dir=args.tool_dir)
+                                      tool=args.tool,
+                                      tool_dir=args.tool_dir)
 
             if task_id:
                 if not args.quiet:
