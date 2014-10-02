@@ -724,7 +724,6 @@ class Database(object):
 
     # The following functions are mostly used by external utils.
 
-
     def add(self, obj, timeout=0, package="", options="", priority=1,
             custom="", machine="", platform="", tags=None,
             memory=False, enforce_timeout=False, clock=None,
